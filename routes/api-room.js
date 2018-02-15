@@ -86,9 +86,33 @@ router.post("/room/publish", function(req, res) {
 	}
 })
 
+router.get("/room/location/", function(req, res) {
+  var latitude = req.query.latitude;
+  var longitude = req.query.longitude;
+  var distance = req.query.distance;
+ 
+  function getRadians(meters) {
+    var km = meters / 1000;
+    return km / 111.2;
+  }
+
+  Room.find()
+  .where("loc")
+  .near({
+    center: [longitude, latitude],
+    maxDistance: getRadians(distance)
+  })
+  .exec()
+  .then(function(rooms) {
+    res.send({
+      rooms
+    })
+  });
+  
+});
+
 router.get("/room/:id", function(req, res) {
   var id = req.params.id
-console.log(id)
   // VERIFIER TOKEN AVANT DE FAIRE LA REQUETE
   if (!id){
       return res.status(400).json({
@@ -126,9 +150,10 @@ console.log(id)
   }  
 });
 
+
+
 router.get("/room/", function(req, res) {
   var criteria = req.query;
-  console.log(criteria)
   Room.find(criteria).exec(function(err, rooms) {
     Room.count(criteria).exec(function(err, count) {
       res.json({
@@ -138,5 +163,7 @@ router.get("/room/", function(req, res) {
     })
   })
 });
+
+
 
 module.exports = router;
