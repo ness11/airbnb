@@ -6,8 +6,7 @@ var AES = require("crypto-js/aes");
 var SHA256 = require("crypto-js/sha256");
 var uid2 = require("uid2");
 var encBase64 = require("crypto-js/enc-base64");
-var user = require("../models/user");
-var room = require("../models/room");
+var User = require("../models/user");
 var mailgun = require("mailgun-js");
 var api_key = 'key-bfe679245710dac7e4d870690a43ef61';
 var DOMAIN = 'sandboxdfc2f679cf3242ec91061cc820be204e.mailgun.org';
@@ -69,8 +68,8 @@ router.post("/user/log_in", function(req, res) {
     var password = req.body.password
     if (email){
         User.findOne({ email: email }).exec(function(err, user) {
-            password = SHA256( password + user.salt).toString(encBase64);
-            if (!err) {
+            if (!err && email) {
+                password = SHA256( password + user.salt).toString(encBase64);
                 if (password === user.hash){
                     res.json({
                         "_id": user._id,
@@ -81,9 +80,13 @@ router.post("/user/log_in", function(req, res) {
                         }
                     })
                 } else {
-                    res.json("WRONG")
+                    return res.status(400).json({
+                        "error": {
+                            "code": 9470988,
+                            "message": "Something wrong"
+                        }
+                    })  
                 }
-            // GERER ERREUR
             } else {
                 return res.status(400).json({
                     "error": {
@@ -92,12 +95,12 @@ router.post("/user/log_in", function(req, res) {
                     }
                 })  
             }
-            
+
         });
     } else if (username)  {
         User.findOne({ "account.username" : username }).exec(function(err, user) {
-            password = SHA256( password + user.salt).toString(encBase64);
-            if (!err) {
+            if (!err && user) {
+                password = SHA256( password + user.salt).toString(encBase64);
                 if (password === user.hash){
                     res.json({
                         "_id": user._id,
@@ -108,9 +111,13 @@ router.post("/user/log_in", function(req, res) {
                         }
                     })
                 } else {
-                    res.json("WRONG")
+                    return res.status(400).json({ 
+                        "error": {
+                            "code": 9470988,
+                            "message": "Something wrong"
+                        }
+                    })
                 }
-            // GERER ERREUR
             } else {
                 return res.status(400).json({
                     "error": {
@@ -164,82 +171,5 @@ router.get("/user/:id", function(req, res) {
     }  
 });
 
-router.post("/room/publish", function(req, res) {
-    var title = req.body.title;
-    var desciption = req.body.description;
-    var photos = req.body.photos;
-    var price = req.body.price;
-    var city = req.body.city
-    var loc = req.body.loc
-    var ratingValue = req.body.ratingValue;
-    var reviews = req.body.reviews;
-    var token = req.headers.authorization
-    token = token.split(" ")
-    var deleteBearer = token.shift()
-    token = token.join()
-    
-    if (!token){
-        return res.status(400).json({
-            "error": {
-                "code": 9473248,
-                "message": "Invalid token"
-            }
-        })
-    } else {
-        user.findOne({token: token}, function(err, user) {
-            if (user){
-                room = new Room({
-                    "_id": room.id,
-                    "title": title,
-                    "description": desciption,
-                    "photos": photos,
-                    "price": price,
-                    "city": city,
-                    "loc": loc,
-                    "ratingValue": ratingValue,
-                    "reviews": reviews,
-                    "user": {
-                        "_id": user.id,
-                        "account": {
-                            "username": user.account.username
-                        }
-                    }
-                })
-                room.save(function(err, obj) {
-                    if (err) {
-                        res.send(err)
-                    console.log("something went wrong");
-                    } else { 
-                        res.json({
-                            "_id": room.id,
-                            "title": title,
-                            "description": desciption,
-                            "photos": [photos],
-                            "price": price,
-                            "city": city,
-                            "loc": [loc],
-                            "ratingValue": ratingValue,
-                            "reviews": reviews,
-                            "user": {
-                                "_id": user.id,
-                                "account": {
-                                    "username": user.account.username
-                                }
-                            }
-                        })
-                    console.log("we just saved the new student " + obj.title);
-                    }
-                });    
-            } else {
-                res.status(400).json({
-                    "error": {
-                        "code": 48326,
-                        "message": "Invalid token"
-                    }
-                })
-            } 
-        })
-    }
-})
 
 module.exports = router;

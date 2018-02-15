@@ -10,7 +10,8 @@ var uniqueValidator = require('mongoose-unique-validator');
 
 var Room = require("./models/room");
 var User = require("./models/user");
-var apiRoutes = require("./routes/api");
+var apiRoomRoutes = require("./routes/api-room");
+var apiUserRoutes = require("./routes/api-user");
 
 
 mongoose.connect("mongodb://localhost:27017/airbnb-api");
@@ -18,7 +19,8 @@ mongoose.connect("mongodb://localhost:27017/airbnb-api");
 // parse application/json
 app.use(bodyParser.json())
 
-app.use("/api", apiRoutes);
+app.use("/api", apiUserRoutes);
+app.use("/api", apiRoomRoutes);
 
 
 app.listen(3000, function() {
