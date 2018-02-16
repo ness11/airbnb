@@ -18,9 +18,9 @@ var roomSchema = new mongoose.Schema({
         "type": mongoose.Schema.Types.ObjectId,
         "ref": "User"
     }
-    
+
 })
-  
+
 var Room = mongoose.model("Room", roomSchema);
 
 module.exports = Room
