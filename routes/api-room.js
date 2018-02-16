@@ -9,94 +9,116 @@ var encBase64 = require("crypto-js/enc-base64");
 var User = require("../models/user");
 var Room = require("../models/room");
 
-router.post("/room/publish", function (req, res) {
+router.post("/room/publish", function(req, res) {
   var title = req.body.title;
   var desciption = req.body.description;
   var photos = req.body.photos;
   var price = req.body.price;
-  var city = req.body.city
-  var loc = req.body.loc
+  var city = req.body.city;
+  var loc = req.body.loc;
   var ratingValue = req.body.ratingValue;
   var reviews = req.body.reviews;
-  var token = req.headers.authorization
-  token = token.split(" ")
-  var deleteBearer = token.shift()
-  token = token.join()
+  var token = req.headers.authorization;
+  token = token.split(" ");
+  var deleteBearer = token.shift();
+  token = token.join();
 
   if (!token) {
     return res.status(400).json({
-      "error": {
-        "code": 9473248,
-        "message": "Invalid token"
+      error: {
+        code: 9473248,
+        message: "Invalid token"
       }
-    })
+    });
   } else {
-    User.findOne({ token: token }).exec(function (err, user) {
+    User.findOne({ token: token }).exec(function(err, user) {
       if (user) {
         var room = new Room({
-          "title": title,
-          "description": desciption,
-          "photos": photos,
-          "price": price,
-          "city": city,
-          "loc": loc,
-          "ratingValue": ratingValue,
-          "reviews": reviews,
-          "user": {
-            "_id": user.id,
-            "account": {
-              "username": user.account.username
+          title: title,
+          description: desciption,
+          photos: photos,
+          price: price,
+          city: city,
+          loc: loc,
+          ratingValue: ratingValue,
+          reviews: reviews,
+          user: {
+            _id: user.id,
+            account: {
+              username: user.account.username
             }
           }
-        })
-        user.rooms.push(room._id)
-        user.save(function (err, obj) {
+        });
+        user.rooms.push(room._id);
+        user.save(function(err, obj) {
           if (err) {
-            res.send(err)
+            res.send(err);
             console.log("something went wrong");
           } else {
-            console.log("update ok")
+            console.log("update ok");
           }
-        })
-        room.save(function (err, obj) {
+        });
+        room.save(function(err, obj) {
           if (err) {
-            res.send(err)
+            res.send(err);
             console.log("something went wrong");
           } else {
             res.json({
-              "_id": room.id,
-              "title": title,
-              "description": desciption,
-              "photos": photos,
-              "price": price,
-              "city": city,
-              "loc": loc,
-              "ratingValue": ratingValue,
-              "reviews": reviews,
-              "user": {
-                "_id": user.id,
-                "account": {
-                  "username": user.account.username
+              _id: room.id,
+              title: title,
+              description: desciption,
+              photos: photos,
+              price: price,
+              city: city,
+              loc: loc,
+              ratingValue: ratingValue,
+              reviews: reviews,
+              user: {
+                _id: user.id,
+                account: {
+                  username: user.account.username
                 }
               }
-            })
+            });
             console.log("we just saved the new student " + obj.title);
           }
-        })
-
+        });
       } else {
         res.status(400).json({
-          "error": {
-            "code": 48326,
-            "message": "Invalid token"
+          error: {
+            code: 48326,
+            message: "Invalid token"
           }
-        })
+        });
       }
-    })
+    });
   }
-})
+});
+router.get("/room/all/", function(req, res) {
+  var appt = 5;
+  var page = req.query.page;
+  var priceMin = req.query.priceMin;
+  var priceMax = req.query.priceMax;
+  console.log(page);
+  console.log(priceMin);
+  console.log(priceMax);
 
-router.get("/room/location/", function (req, res) {
+  Room.count().exec(function(err, count) {
+    Room.find({})
+      .where("price")
+      .gt(priceMin)
+      .lt(priceMax)
+      .limit(appt)
+      .skip(page * appt - appt)
+      .exec(function(err, rooms) {
+        res.json({
+          rooms: rooms
+        });
+      });
+  });
+});
+
+router.get("/room/location/", function(req, res) {
   var latitude = req.query.latitude;
   var longitude = req.query.longitude;
   var distance = req.query.distance;
@@ -113,67 +135,63 @@ router.get("/room/location/", function (req, res) {
       maxDistance: getRadians(distance)
     })
     .exec()
-    .then(function (rooms) {
+    .then(function(rooms) {
       res.send({
         rooms
-      })
+      });
     });
-
 });
 
-router.get("/room/:id", function (req, res) {
-  var id = req.params.id
+router.get("/room/:id", function(req, res) {
+  var id = req.params.id;
   // VERIFIER TOKEN AVANT DE FAIRE LA REQUETE
   if (!id) {
     return res.status(400).json({
-      "error": {
-        "code": 9473248,
-        "message": "Invalid token"
-      }
-    })
-  } else {
-    Room.findOne({ _id: id }).populate({ path: 'user', select: 'account.username' }).exec(function (err, room) {
-      if (id && !err) {
-        res.json({
-          "_id": room.id,
-          "title": room.title,
-          "description": room.description,
-          "photos": room.photos,
-          "price": room.price,
-          "city": room.city,
-          "loc": room.loc,
-          "ratingValue": room.ratingValue,
-          "reviews": room.review,
-          "user": room.user
-
-        });
-
-      } else {
-        return res.status(400).json({
-          "error": {
-            "code": 49000,
-            "message": "Invalid id"
-          }
-        })
+      error: {
+        code: 9473248,
+        message: "Invalid token"
       }
     });
+  } else {
+    Room.findOne({ _id: id })
+      .populate({ path: "user", select: "account.username" })
+      .exec(function(err, room) {
+        if (id && !err) {
+          res.json({
+            _id: room.id,
+            title: room.title,
+            description: room.description,
+            photos: room.photos,
+            price: room.price,
+            city: room.city,
+            loc: room.loc,
+            ratingValue: room.ratingValue,
+            reviews: room.review,
+            user: room.user
+          });
+        } else {
+          return res.status(400).json({
+            error: {
+              code: 49000,
+              message: "Invalid id"
+            }
+          });
+        }
+      });
   }
 });
 
-
-
-router.get("/room/", function (req, res) {
+router.get("/room/", function(req, res) {
   var criteria = req.query;
-  Room.find(criteria).exec(function (err, rooms) {
-    Room.count(criteria).exec(function (err, count) {
+
+  Room.find(criteria).exec(function(err, rooms) {
+    Room.count(criteria).exec(function(err, count) {
       res.json({
-        "rooms": rooms,
-        "count": count
-      })
-    })
-  })
+        rooms: rooms,
+        count: count
+      });
+    });
+  });
 });
-
-
 
 module.exports = router;
